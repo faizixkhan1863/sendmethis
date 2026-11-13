@@ -16,9 +16,10 @@ import {
 type Status = 'idle' | 'sending' | 'sent'
 
 const PROFILES = [
-  { initials: 'M', name: 'Maryam', role: 'SDR', gradient: 'from-blue-500 to-sky-400' },
-  { initials: 'N', name: 'Nimra', role: 'SDR', gradient: 'from-teal-500 to-emerald-400' },
-  { initials: 'K', name: 'Kinza', role: 'SDR', gradient: 'from-cyan-500 to-blue-400' },
+  { initials: 'RK', name: 'Rana Kamran', role: 'SDR', gradient: 'from-blue-500 to-sky-400' },
+  { initials: 'WM', name: 'Waqas Malik', role: 'SDR', gradient: 'from-teal-500 to-emerald-400' },
+  { initials: 'AM', name: 'Abeera Maroof', role: 'SDR', gradient: 'from-cyan-500 to-blue-400' },
+  { initials: 'AF', name: 'Ahmad Faiz', role: 'SDR', gradient: 'from-violet-500 to-purple-400' },
 ]
 
 export default function Home() {
@@ -211,7 +212,7 @@ export default function Home() {
                 </p>
                 <p className="mt-1 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600/90">
                   <Mail className="h-3.5 w-3.5" aria-hidden />
-                  Login credentials delivered to all 3 team members via email.
+                  Login credentials delivered to all 4 team members via email.
                 </p>
                 <button
                   type="button"
