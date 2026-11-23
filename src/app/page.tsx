@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import {
   Send,
   Loader2,
@@ -11,19 +12,24 @@ import {
   RotateCcw,
   Mail,
   Users,
+  Settings2,
+  ArrowRight,
 } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ProfileManager } from '@/components/profile-manager'
+import {
+  useSyncedProfiles,
+  initialsOf,
+  gradientFor,
+  ROLE_LABEL,
+} from '@/lib/profiles'
 
 type Status = 'idle' | 'sending' | 'sent'
 
-const PROFILES = [
-  { initials: 'RK', name: 'Rana Kamran', role: 'SDR', gradient: 'from-blue-500 to-sky-400' },
-  { initials: 'WM', name: 'Waqas Malik', role: 'SDR', gradient: 'from-teal-500 to-emerald-400' },
-  { initials: 'AM', name: 'Abeera Maroof', role: 'SDR', gradient: 'from-cyan-500 to-blue-400' },
-  { initials: 'AF', name: 'Ahmad Faiz', role: 'SDR', gradient: 'from-violet-500 to-purple-400' },
-]
-
 export default function Home() {
   const [status, setStatus] = useState<Status>('idle')
+  const [profiles, updateProfiles] = useSyncedProfiles()
+  const [manageOpen, setManageOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -33,7 +39,7 @@ export default function Home() {
   }, [])
 
   const handleSend = () => {
-    if (status !== 'idle') return
+    if (status !== 'idle' || profiles.length === 0) return
     setStatus('sending')
     timerRef.current = setTimeout(() => setStatus('sent'), 1800)
   }
@@ -110,20 +116,20 @@ export default function Home() {
 
           {/* Profile list */}
           <ul className="mt-7 space-y-2.5" aria-label="Team profiles ready for delivery">
-            {PROFILES.map((p) => (
+            {profiles.map((p, i) => (
               <li
-                key={p.name}
+                key={p.id}
                 className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/90 px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${p.gradient} text-sm font-bold text-white shadow-md`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${gradientFor(i)} text-sm font-bold text-white shadow-md`}
                   aria-hidden
                 >
-                  {p.initials}
+                  {initialsOf(p.name)}
                 </div>
                 <div className="min-w-0 flex-1 leading-tight">
                   <p className="truncate text-sm font-semibold text-slate-800">{p.name}</p>
-                  <p className="truncate text-xs text-slate-400">{p.role}</p>
+                  <p className="truncate text-xs text-slate-400">{ROLE_LABEL}</p>
                 </div>
                 {status === 'idle' && (
                   <span key="idle" className="sk-pop inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-600 ring-1 ring-amber-100">
@@ -145,6 +151,11 @@ export default function Home() {
                 )}
               </li>
             ))}
+            {profiles.length === 0 && (
+              <li className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm font-medium text-slate-400">
+                No team profiles yet — add them from Manage Profiles.
+              </li>
+            )}
           </ul>
 
           {/* Progress line while sending */}
@@ -160,29 +171,34 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={status === 'sending'}
+                disabled={status === 'sending' || profiles.length === 0}
                 aria-live="polite"
-                className={`group relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a6be0] to-[#0fb5c9] px-8 py-4.5 text-base font-bold text-white shadow-xl shadow-blue-500/30 transition-all duration-200 ${
-                  status === 'idle'
-                    ? 'hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-[0.97] min-h-[56px]'
-                    : 'cursor-wait opacity-90 min-h-[56px]'
+                className={`group relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a6be0] to-[#0fb5c9] px-8 py-4.5 text-base font-bold text-white shadow-xl shadow-blue-500/30 transition-all duration-200 min-h-[56px] ${
+                  status === 'idle' && profiles.length > 0
+                    ? 'hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-[0.97]'
+                    : 'cursor-not-allowed opacity-60'
                 }`}
               >
-                {status === 'idle' && (
+                {status === 'idle' && profiles.length > 0 && (
                   <span
                     aria-hidden
                     className="sk-shine-anim pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                   />
                 )}
-                {status === 'idle' ? (
-                  <>
-                    <Send className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-0.5" aria-hidden />
-                    Send Login Credentials
-                  </>
-                ) : (
+                {status === 'sending' ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
                     Sending Profiles…
+                  </>
+                ) : profiles.length === 0 ? (
+                  <>
+                    <Users className="h-5 w-5" aria-hidden />
+                    No Profiles — Add First
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-0.5" aria-hidden />
+                    Send Login Credentials
                   </>
                 )}
               </button>
@@ -212,7 +228,8 @@ export default function Home() {
                 </p>
                 <p className="mt-1 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600/90">
                   <Mail className="h-3.5 w-3.5" aria-hidden />
-                  Login credentials delivered to all 4 team members via email.
+                  Login credentials delivered to all {profiles.length} team{' '}
+                  {profiles.length === 1 ? 'member' : 'members'} via email.
                 </p>
                 <button
                   type="button"
@@ -225,6 +242,17 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {/* Manage profiles */}
+          <button
+            type="button"
+            onClick={() => setManageOpen(true)}
+            className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-2.5 text-sm font-semibold text-blue-600 transition-all hover:bg-blue-100/70 hover:text-blue-700 active:scale-[0.98]"
+          >
+            <Settings2 className="h-4 w-4" aria-hidden />
+            Manage Profiles
+            <span className="sr-only">— add, rename or delete team members</span>
+          </button>
 
           {/* tiny reassurance */}
           <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-[11px] font-medium text-slate-400">
@@ -241,6 +269,31 @@ export default function Home() {
           healthcare practices
         </p>
       </footer>
+
+      {/* ── Manage dialog ── */}
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto rounded-3xl border-white/70 bg-white/95 backdrop-blur-xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1a6be0] to-[#0fb5c9] shadow-md shadow-blue-500/25">
+                <Settings2 className="h-4.5 w-4.5 text-white" aria-hidden />
+              </span>
+              Manage Team Profiles
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Rename, add or delete team members — the portal updates instantly.
+            </DialogDescription>
+          </DialogHeader>
+          <ProfileManager profiles={profiles} onChange={updateProfiles} />
+          <Link
+            href="/manage"
+            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700"
+          >
+            Open full manage page
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
